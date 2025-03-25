@@ -1,4 +1,0 @@
-2025-03-24T14:53:27.116+01:00  INFO 45941 --- [main] c.d.mcp.filesystem.McpServerApplication  : Starting McpServerApplication using Java 23.0.1 with PID 45941 (/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/classes started by stephan in /Users/stephan/IdeaProjects/JavaFileSystemMCP)
-2025-03-24T14:53:27.117+01:00  INFO 45941 --- [main] c.d.mcp.filesystem.McpServerApplication  : No active profile set, falling back to 1 default profile: "default"
-2025-03-24T14:53:27.355+01:00  INFO 45941 --- [main] o.s.a.a.m.s.McpServerAutoConfiguration   : Registered tools: 1, notification: true
-2025-03-24T14:53:27.404+01:00  INFO 45941 --- [main] c.d.mcp.filesystem.McpServerApplication  : Started McpServerApplication in 0.416 seconds (process running for 0.618)
