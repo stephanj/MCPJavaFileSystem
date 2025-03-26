@@ -1,9 +1,6 @@
 package com.devoxx.mcp.filesystem;
 
-import com.devoxx.mcp.filesystem.tools.EditFileService;
-import com.devoxx.mcp.filesystem.tools.ListDirectoryService;
-import com.devoxx.mcp.filesystem.tools.ReadFileService;
-import com.devoxx.mcp.filesystem.tools.SearchFilesService;
+import com.devoxx.mcp.filesystem.tools.*;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.boot.SpringApplication;
@@ -21,9 +18,16 @@ public class McpServerApplication {
 	public ToolCallbackProvider mcpServices(SearchFilesService searchFilesService,
 											ReadFileService readFileService,
 											EditFileService editFileService,
-											ListDirectoryService listDirectoryService) {
+											ListDirectoryService listDirectoryService,
+											WriteFileService writeFileService,
+											FetchWebpageService fetchWebpageService) {
 		return MethodToolCallbackProvider.builder()
-				.toolObjects(searchFilesService, listDirectoryService, editFileService, readFileService)
+				.toolObjects(searchFilesService,
+						listDirectoryService,
+						editFileService,
+						readFileService,
+						writeFileService,
+						fetchWebpageService)
 				.build();
 	}
 }
