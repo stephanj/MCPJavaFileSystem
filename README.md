@@ -17,6 +17,9 @@ The JavaFileSystemMCP server provides the following file system operations:
 
 These operations are exposed as tools for Large Language Models using the Model Context Protocol (MCP), allowing AI systems to safely interact with the file system and web content.
 
+## Example of the FileSystem MCP Java tool with [DevoxxGenie](https://github.com/devoxx/DevoxxGenieIDEAPlugin)
+<img width="987" alt="Screenshot 2025-03-26 at 09 52 26" src="https://github.com/user-attachments/assets/a46e0bc7-1efa-4dd7-b6fa-2d4437fbe310" />
+
 ## Getting Started
 
 ### Prerequisites
