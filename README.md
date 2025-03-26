@@ -191,6 +191,8 @@ Arguments:
 /Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
 ```
 
+<img width="959" alt="Screenshot 2025-03-26 at 09 48 59" src="https://github.com/user-attachments/assets/35303708-ef13-461e-9a4c-07a1ea04c348" />
+
 ### Usage with DevoxxGenie
 
 Once configured, DevoxxGenie will automatically discover the tools provided by this MCP server. The AI assistant can then use these tools to:
