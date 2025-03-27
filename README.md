@@ -208,8 +208,6 @@ This server can be easily integrated with DevoxxGenie using the MCP (Model Conte
 
 ### Example Configuration
 
-Based on the provided screenshot:
-
 ```
 Name: JavaFilesystem
 Transport Type: STDIO
@@ -233,6 +231,30 @@ Once configured, DevoxxGenie will automatically discover the tools provided by t
 5. Fetch web pages and extract content
 
 All operations will be performed with the permissions of the user running the DevoxxGenie application.
+
+### Using with Claude Desktop
+
+Edit your claude_desktop_config.json file with the following:
+
+```java
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "/Library/Java/JavaVirtualMachines/liberica-jdk-23.jdk/Contents/Home/bin/java",
+      "args": [
+        "-Dspring.ai.mcp.server.stdio=true",
+        "-Dspring.main.web-application-type=none",
+        "-Dlogging.pattern.console=",
+        "-jar",
+        "/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
+      ]
+    }  
+  }
+}
+```
+
+<img width="796" alt="image" src="https://github.com/user-attachments/assets/4af70010-2b9d-435f-90b7-38033961a2fb" />
+
 
 ## Security Considerations
 
