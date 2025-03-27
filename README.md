@@ -200,25 +200,14 @@ This server can be easily integrated with DevoxxGenie using the MCP (Model Conte
    - **Command**: Full path to your Java executable (e.g., `/Library/Java/JavaVirtualMachines/liberica-jdk-23.jdk/Contents/Home/bin/java`)
    - **Arguments**:
      ```
+     -Dspring.ai.mcp.server.stdio=true
+     -Dspring.main.web-application-type=none
+     -Dlogging.pattern.console=
      -jar
-     /path/to/your/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
+     /Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
      ```
 
      Enter each argument on a new line.
-
-### Example Configuration
-
-```
-Name: JavaFilesystem
-Transport Type: STDIO
-Command: /Library/Java/JavaVirtualMachines/liberica-jdk-23.jdk/Contents/Home/bin/java
-Arguments: 
--Dspring.ai.mcp.server.stdio=true
--Dspring.main.web-application-type=none
--Dlogging.pattern.console=
--jar
-/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
-```
 
 ### Usage with DevoxxGenie
 
