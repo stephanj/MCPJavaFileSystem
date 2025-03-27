@@ -7,7 +7,7 @@
         "-Dspring.main.web-application-type=none",
         "-Dlogging.pattern.console=",
         "-jar",
-        "/Users/christiantzolov/Dev/projects/demo/MCPJavaFileSystem/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
+        "/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
       ],
       "env": {}
     }

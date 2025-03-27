@@ -215,11 +215,12 @@ Name: JavaFilesystem
 Transport Type: STDIO
 Command: /Library/Java/JavaVirtualMachines/liberica-jdk-23.jdk/Contents/Home/bin/java
 Arguments: 
+-Dspring.ai.mcp.server.stdio=true
+-Dspring.main.web-application-type=none
+-Dlogging.pattern.console=
 -jar
 /Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
 ```
-
-<img width="959" alt="Screenshot 2025-03-26 at 09 48 59" src="https://github.com/user-attachments/assets/35303708-ef13-461e-9a4c-07a1ea04c348" />
 
 ### Usage with DevoxxGenie
 
