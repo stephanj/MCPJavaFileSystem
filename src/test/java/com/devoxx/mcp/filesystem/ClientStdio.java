@@ -10,7 +10,8 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 
 /**
- * With stdio transport, the MCP server is automatically started by the client. But you
+ * With stdio transport, the MCP server is automatically started by the client.
+ * But you
  * have to build the server jar first:
  *
  * <pre>
@@ -19,12 +20,13 @@ import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
  */
 public class ClientStdio {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 
 		var stdioParams = ServerParameters.builder("java")
-			.args("-jar",
-					"model-context-protocol/filesystem/target/mcp-filesystem-tool-0.0.1-SNAPSHOT.jar")
-			.build();
+				.args("-Dspring.ai.mcp.server.stdio=true", "-Dspring.main.web-application-type=none",
+						"-Dlogging.pattern.console=", "-jar",
+						"/Users/christiantzolov/Dev/projects/demo/MCPJavaFileSystem/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar")
+				.build();
 
 		var transport = new StdioClientTransport(stdioParams);
 		var client = McpClient.sync(transport).build();
@@ -34,13 +36,6 @@ public class ClientStdio {
 		// List and demonstrate tools
 		ListToolsResult toolsList = client.listTools();
 		System.out.println("Available Tools = " + toolsList);
-
-		CallToolResult weatherForcastResult = client.callTool(new CallToolRequest("getWeatherForecastByLocation",
-				Map.of("latitude", "47.6062", "longitude", "-122.3321")));
-		System.out.println("Weather Forcast: " + weatherForcastResult);
-
-		CallToolResult alertResult = client.callTool(new CallToolRequest("getAlerts", Map.of("state", "NY")));
-		System.out.println("Alert Response = " + alertResult);
 
 		client.closeGracefully();
 	}
