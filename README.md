@@ -246,7 +246,7 @@ All operations will be performed with the permissions of the user running the De
 
 Edit your claude_desktop_config.json file with the following:
 
-```java
+```json
 {
   "mcpServers": {
     "filesystem": {
