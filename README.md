@@ -13,6 +13,7 @@ The server provides the following operations:
 - **Searching Files**: Recursively search for files and directories using glob patterns
 - **Listing Directories**: Get detailed listings of directory contents
 - **Directory Creation**: Create directories and nested directory structures
+- **Grep Files**: Search for text patterns within files with line numbers and context, similar to Unix grep command
 
 ### Web Operations
 - **Web Page Fetching**: Retrieve content from web pages with configurable timeouts
@@ -89,6 +90,20 @@ listDirectory(String path)
 ```
 Gets a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with additional metadata.
 
+#### GrepFilesService
+
+```java
+grepFiles(String directory, String pattern, String fileExtension, Boolean useRegex, Integer contextLines, Integer maxResults, Boolean ignoreCase)
+```
+Searches for text patterns within files. Returns matching files with line numbers and context. Similar to the Unix 'grep' command but with additional features for context display. Supports regex patterns, case-insensitive search, and context lines before/after matches.
+
+#### CreateDirectoryService
+
+```java
+createDirectory(List<String> directories)
+```
+Creates new directories or ensures that directories exist. Can create multiple directories in one operation. If a directory already exists, the operation succeeds silently. Perfect for setting up directory structures for projects or ensuring required paths exist.
+
 ### Web Tools
 
 #### FetchWebpageService
@@ -147,6 +162,8 @@ JavaFileSystemMCP/
                   SearchFilesService.java
                   FetchWebpageService.java
                   ListDirectoryService.java
+                  CreateDirectoryService.java
+                  GrepFilesService.java
                 McpServerApplication.java
       resources/
         application.properties
@@ -163,6 +180,8 @@ JavaFileSystemMCP/
                   SearchFilesServiceTest.java
                   FetchWebpageServiceTest.java
                   ListDirectoryServiceTest.java
+                  CreateDirectoryServiceTest.java
+                  GrepFilesServiceTest.java
                 ClientStdio.java
   pom.xml
   README.md
@@ -217,7 +236,9 @@ Once configured, DevoxxGenie will automatically discover the tools provided by t
 2. Search for files and directories
 3. List directory contents
 4. Make edits to existing files
-5. Fetch web pages and extract content
+5. Search for text patterns within files (grep)
+6. Create directories and nested directory structures
+7. Fetch web pages and extract content
 
 All operations will be performed with the permissions of the user running the DevoxxGenie application.
 

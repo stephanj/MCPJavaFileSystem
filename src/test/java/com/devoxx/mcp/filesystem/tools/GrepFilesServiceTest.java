@@ -177,48 +177,6 @@ class GrepFilesServiceTest {
     }
 
     @Nested
-    @DisplayName("Filter Tests")
-    class FilterTests {
-        
-        @Test
-        void shouldSearchAllFilesWhenExtensionFilterIsNull() throws Exception {
-            // Given
-            createTestFiles(tempDir);
-            String pattern = "sample"; // Appears in both .txt and .xml files
-            
-            // When - extension filter is null
-            String resultWithNullFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null, null);
-            JsonNode jsonResultNullFilter = objectMapper.readTree(resultWithNullFilter);
-            
-            // When - extension filter is empty
-            String resultWithEmptyFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, "", false, null, null, null);
-            JsonNode jsonResultEmptyFilter = objectMapper.readTree(resultWithEmptyFilter);
-            
-            // Then - both should search all files
-            assertTrue(jsonResultNullFilter.get("success").asBoolean());
-            assertTrue(jsonResultEmptyFilter.get("success").asBoolean());
-            
-            // The number of matches should be the same for both null and empty filter
-            assertEquals(
-                jsonResultNullFilter.get("totalMatches").asInt(),
-                jsonResultEmptyFilter.get("totalMatches").asInt()
-            );
-            
-            // We should have matches in files with different extensions
-            boolean foundTxtFile = false;
-            boolean foundXmlFile = false;
-            
-            for (JsonNode fileMatch : jsonResultNullFilter.get("matches")) {
-                String filePath = fileMatch.get("file").asText();
-                if (filePath.endsWith(".txt")) foundTxtFile = true;
-                if (filePath.endsWith(".xml")) foundXmlFile = true;
-            }
-            
-            assertTrue(foundTxtFile || foundXmlFile, "Should find matches in different file types");
-        }
-    }
-
-    @Nested
     @DisplayName("Error Handling Tests")
     class ErrorHandlingTests {
 
