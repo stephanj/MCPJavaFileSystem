@@ -178,4 +178,13 @@ class SearchFilesServiceTest {
         assertTrue(jsonResult.get("matches").isArray());
         assertEquals(0, jsonResult.get("matches").size());
     }
+
+    @Test
+    void findResultsWithComplexWildcard() throws Exception {
+//        "arguments": {
+//            "path": "/Users/stephan/IdeaProjects/JavaFileSystemMCP",
+//                    "pattern": "*.java*Test"
+//        }
+        // TODO
+    }
 }

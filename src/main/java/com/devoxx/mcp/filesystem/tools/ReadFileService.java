@@ -1,6 +1,5 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
@@ -13,9 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class ReadFileService {
-
-    private final ObjectMapper mapper = new ObjectMapper();
+public class ReadFileService extends AbstractToolService {
 
     @Tool(description = """
     Read the complete contents of a file from the file system. Handles various text encodings and provides detailed
@@ -28,43 +25,30 @@ public class ReadFileService {
             Path path = Paths.get(fullPathFile);
 
             if (!Files.exists(path)) {
-                result.put("success", false);
-                result.put("error", "File does not exist: " + fullPathFile);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "File does not exist: " + fullPathFile);
                 return mapper.writeValueAsString(result);
             }
 
             if (!Files.isRegularFile(path)) {
-                result.put("success", false);
-                result.put("error", "Path is not a regular file: " + fullPathFile);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "Path is not a regular file: " + fullPathFile);
                 return mapper.writeValueAsString(result);
             }
 
             // Try to detect the file encoding (simplified here, uses default charset)
             String content = Files.readString(path);
 
-            result.put("success", true);
             result.put("content", content);
             result.put("path", fullPathFile);
             result.put("size", Files.size(path));
 
-            return mapper.writeValueAsString(result);
+            return successMessage(result);
 
         } catch (IOException e) {
-            result.put("success", false);
-            result.put("error", "Failed to read file: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Failed to read file: " + e.getMessage());
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Unexpected error: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Unexpected error: " + e.getMessage());
         }
     }
 }

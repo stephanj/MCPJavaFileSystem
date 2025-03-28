@@ -1,24 +1,20 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class FetchWebpageService {
-
-    private final ObjectMapper mapper = new ObjectMapper();
+public class FetchWebpageService extends AbstractToolService {
 
     @Tool(description = """
-    Fetch or read a webpage from a URL and returns its HTML content. The service uses jsoup to connect to the 
-    webpage and retrieve its content. Options include retrieving just the text content, filtering by CSS 
+    Fetch or read a webpage from a URL and returns its HTML content. The service uses jsoup to connect to the webpage
+    and retrieve its content. Options include retrieving just the text content, filtering by CSS
     selectors, and setting a timeout for the connection.
     """)
     public String fetchWebpage(
@@ -36,35 +32,13 @@ public class FetchWebpageService {
                     .timeout(timeout)
                     .get();
             
-            String content;
-            
-            content = doc.text();
-
-            result.put("success", true);
             result.put("url", url);
-            result.put("content", content);
+            result.put("content", doc.text());
             result.put("title", doc.title());
+            return successMessage(result);
             
-            return mapper.writeValueAsString(result);
-            
-        } catch (IOException e) {
-            result.put("success", false);
-            result.put("error", "Failed to fetch webpage: " + e.getMessage());
-            result.put("url", url);
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Unexpected error: " + e.getMessage());
-            result.put("url", url);
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Failed to access url : " + url);
         }
     }
 }

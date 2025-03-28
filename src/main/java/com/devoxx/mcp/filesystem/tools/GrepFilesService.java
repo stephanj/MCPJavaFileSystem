@@ -1,10 +1,10 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,10 +18,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Service
-public class GrepFilesService {
+public class GrepFilesService extends AbstractToolService {
 
-    public static final int DEFAULT_MAX_RESULTS = 10;
-    private final ObjectMapper mapper = new ObjectMapper();
+    public static final int DEFAULT_MAX_RESULTS = 100;
 
     @Tool(description = """
             Search for text patterns within files. Returns matching files with line numbers and snippets.
@@ -49,14 +48,14 @@ public class GrepFilesService {
             Path basePath = Paths.get(directory);
             
             if (!Files.exists(basePath)) {
-                result.put("success", false);
-                result.put("error", "Directory does not exist: " + directory);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "Directory does not exist: " + directory);
                 return mapper.writeValueAsString(result);
             }
             
             if (!Files.isDirectory(basePath)) {
-                result.put("success", false);
-                result.put("error", "Path is not a directory: " + directory);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "Path is not a directory: " + directory);
                 return mapper.writeValueAsString(result);
             }
             
@@ -71,19 +70,20 @@ public class GrepFilesService {
             }
             
             // Initialize gitignore utility if needed
-            // GitignoreUtil gitignoreUtil = respectGitignoreValue ? new GitignoreUtil(directory) : null;
+            // TODO GitignoreUtil gitignoreUtil = respectGitignoreValue ? new GitignoreUtil(directory) : null;
             
             // Find all files that match the extension filter and respect gitignore if enabled
             List<Path> filesToSearch = new ArrayList<>();
             try (Stream<Path> paths = Files.walk(basePath)) {
-                paths.filter(Files::isRegularFile)
-                     .filter(path -> fileExtension == null || fileExtension.isEmpty() || 
-                                   path.toString().endsWith(fileExtension))
-                     .forEach(filesToSearch::add);
+                paths.filter(path -> !path.toString().contains(File.separator + "target" + File.separator) &&
+                                Files.isRegularFile(path) &&
+                                (fileExtension == null || fileExtension.isEmpty() || path.toString().endsWith(fileExtension)))
+                        .forEach(filesToSearch::add);
             }
             
             // Search each file for the pattern
             for (Path filePath : filesToSearch) {
+
                 if (totalMatches >= maxResultsValue) {
                     break;
                 }
@@ -168,9 +168,7 @@ public class GrepFilesService {
             if (!matchingSummaries.isEmpty() && matchingSummaries.get(matchingSummaries.size() - 1).equals("---")) {
                 matchingSummaries.remove(matchingSummaries.size() - 1);
             }
-            
-            result.put("success", true);
-            
+
             // Create a summary with gitignore information if applicable
             String summaryText = String.format("Found %d matches in %d files", totalMatches, filesWithMatches);
 
@@ -178,16 +176,10 @@ public class GrepFilesService {
             result.put("results", matchingSummaries);
             result.put("limitReached", totalMatches >= maxResultsValue);
             
-            return mapper.writeValueAsString(result);
+            return successMessage(result);
             
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Error searching files: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Unexpected error: " + e.getMessage());
         }
     }
 }
