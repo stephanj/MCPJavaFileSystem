@@ -1,6 +1,5 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
@@ -15,9 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class WriteFileService {
-
-    private final ObjectMapper mapper = new ObjectMapper();
+public class WriteFileService extends AbstractToolService {
 
     @Tool(description = """
     Create a new file or completely overwrite an existing file with new content. Use with caution as it will overwrite existing files without warning.
@@ -44,29 +41,16 @@ public class WriteFileService {
             Files.writeString(filePath, content, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            result.put("success", true);
             result.put("path", path);
             result.put("bytesWritten", content.getBytes(StandardCharsets.UTF_8).length);
             result.put("action", fileExisted ? "overwritten" : "created");
 
-            return mapper.writeValueAsString(result);
+            return successMessage(result);
 
         } catch (IOException e) {
-            result.put("success", false);
-            result.put("error", "Failed to write file: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Failed to write file: " + e.getMessage());
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Unexpected error: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Failed to serialize error result");
         }
     }
 }

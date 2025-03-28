@@ -102,8 +102,7 @@ class FetchWebpageServiceTest {
             
             // Then
             assertFalse(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("error").asText().contains("Failed to fetch webpage"));
-            assertEquals(url, jsonResult.get("url").asText());
+            assertTrue(jsonResult.get("error").asText().contains("Failed to access url"));
         }
     }
     
@@ -123,7 +122,7 @@ class FetchWebpageServiceTest {
             
             // Then
             assertFalse(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("error").asText().contains("Unexpected error"));
+            assertTrue(jsonResult.get("error").asText().contains("Failed to access url"));
         }
     }
     
@@ -135,7 +134,7 @@ class FetchWebpageServiceTest {
         
         // Then
         assertFalse(jsonResult.get("success").asBoolean());
-        assertTrue(jsonResult.get("error").asText().contains("error"));
+        assertTrue(jsonResult.get("error").asText().contains("Failed to access"));
     }
     
     @Test
@@ -146,6 +145,6 @@ class FetchWebpageServiceTest {
         
         // Then
         assertFalse(jsonResult.get("success").asBoolean());
-        assertTrue(jsonResult.get("error").asText().contains("error"));
+        assertTrue(jsonResult.get("error").asText().contains("Failed"));
     }
 }

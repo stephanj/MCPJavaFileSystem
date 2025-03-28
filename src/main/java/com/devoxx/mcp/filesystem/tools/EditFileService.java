@@ -1,6 +1,5 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
@@ -17,9 +16,10 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 @Service
-public class EditFileService {
+public class EditFileService extends AbstractToolService {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    public static final String OLD_TEXT = "oldText";
+    public static final String NEW_TEXT = "newText";
 
     @Tool(description = """
     Make line-based edits to a text file. Each edit replaces exact line sequences with new content.
@@ -44,14 +44,14 @@ public class EditFileService {
             Path filePath = Paths.get(path);
 
             if (!Files.exists(filePath)) {
-                result.put("success", false);
-                result.put("error", "File does not exist: " + path);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "File does not exist: " + path);
                 return mapper.writeValueAsString(result);
             }
 
             if (!Files.isRegularFile(filePath)) {
-                result.put("success", false);
-                result.put("error", "Path is not a regular file: " + path);
+                result.put(SUCCESS, false);
+                result.put(ERROR, "Path is not a regular file: " + path);
                 return mapper.writeValueAsString(result);
             }
 
@@ -71,13 +71,13 @@ public class EditFileService {
             // Apply each edit
             List<String> appliedEdits = new ArrayList<>();
             for (Map<String, String> edit : editsList) {
-                String oldText = edit.get("oldText");
-                String newText = edit.get("newText");
+                String oldText = edit.get(OLD_TEXT);
+                String newText = edit.get(NEW_TEXT);
                 boolean useRegex = Boolean.parseBoolean(edit.getOrDefault("useRegex", "false"));
 
                 if (oldText == null || newText == null) {
-                    result.put("success", false);
-                    result.put("error", "Each edit must contain 'oldText' and 'newText'");
+                    result.put(SUCCESS, false);
+                    result.put(ERROR, "Each edit must contain 'oldText' and 'newText'");
                     return mapper.writeValueAsString(result);
                 }
 
@@ -95,8 +95,8 @@ public class EditFileService {
                             return mapper.writeValueAsString(result);
                         }
                     } catch (PatternSyntaxException e) {
-                        result.put("success", false);
-                        result.put("error", "Invalid regex pattern: " + e.getMessage());
+                        result.put(SUCCESS, false);
+                        result.put(ERROR, "Invalid regex pattern: " + e.getMessage());
                         return mapper.writeValueAsString(result);
                     }
                 } else {
@@ -122,7 +122,7 @@ public class EditFileService {
                 Files.writeString(filePath, newContent);
             }
 
-            result.put("success", true);
+            result.put(SUCCESS, true);
             result.put("diff", diff);
             result.put("dryRun", isDryRun);
             result.put("editsApplied", appliedEdits.size());
@@ -131,17 +131,9 @@ public class EditFileService {
             return mapper.writeValueAsString(result);
 
         } catch (IOException e) {
-            result.put("success", false);
-            result.put("error", "Failed to edit file: " + e.getMessage());
+            return errorMessage("Failed to edit file: " + e.getMessage());
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Unexpected error: " + e.getMessage());
-        }
-
-        try {
-            return mapper.writeValueAsString(result);
-        } catch (Exception ex) {
-            return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
+            return errorMessage("Unexpected error: " + e.getMessage());
         }
     }
 
@@ -159,9 +151,9 @@ public class EditFileService {
                 // Parse as a single JSON object
                 Map<String, String> singleEdit = mapper.readValue(edits, new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {});
                 
-                if (!singleEdit.containsKey("oldText") || !singleEdit.containsKey("newText")) {
-                    result.put("success", false);
-                    result.put("error", "Edit must contain 'oldText' and 'newText' fields");
+                if (!singleEdit.containsKey(OLD_TEXT) || !singleEdit.containsKey(NEW_TEXT)) {
+                    result.put(SUCCESS, false);
+                    result.put(ERROR, "Edit must contain 'oldText' and 'newText' fields");
                     return null;
                 }
                 
@@ -173,13 +165,13 @@ public class EditFileService {
                 String[] parts = edits.split("----", 2);
                 if (parts.length == 2) {
                     Map<String, String> singleEdit = new HashMap<>();
-                    singleEdit.put("oldText", parts[0]);
-                    singleEdit.put("newText", parts[1]);
+                    singleEdit.put(OLD_TEXT, parts[0]);
+                    singleEdit.put(NEW_TEXT, parts[1]);
                     editsList.add(singleEdit);
                 } else {
-                    result.put("success", false);
-                    result.put("error", "Could not parse edits. Expected JSON format or 'oldText----newText' format.");
-                    return null;
+                    result.put(SUCCESS, false);
+                    result.put(ERROR, "Could not parse edits. Expected JSON format or 'oldText----newText' format.");
+                    return List.of();
                 }
             }
             
@@ -188,7 +180,7 @@ public class EditFileService {
             result.put("success", false);
             result.put("error", "Failed to parse edits: " + e.getMessage());
             result.put("debug_edits_error", e.toString());
-            return null;
+            return List.of();
         }
     }
 
@@ -245,8 +237,7 @@ public class EditFileService {
         // First convert all CRLF to LF
         String normalized = text.replace("\r\n", "\n");
         // Then convert any remaining CR to LF (for Mac old format)
-        normalized = normalized.replace("\r", "\n");
-        return normalized;
+        return normalized.replace("\r", "\n");
     }
 
     /**

@@ -54,6 +54,12 @@
             <version>1.17.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>nl.basjes.gitignore</groupId>
+            <artifactId>gitignore-reader</artifactId>
+            <version>1.6.0</version>
+        </dependency>
+
         <!-- Testing dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

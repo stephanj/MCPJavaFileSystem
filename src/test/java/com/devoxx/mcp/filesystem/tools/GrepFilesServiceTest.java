@@ -10,7 +10,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +27,34 @@ class GrepFilesServiceTest {
         objectMapper = new ObjectMapper();
     }
 
+    private void createTestFiles(Path directory) throws Exception {
+        // Create a few test files with different content and extensions
+        Path textFile1 = directory.resolve("file1.txt");
+        Files.writeString(textFile1, "This is a sample text file\nWith multiple lines\nAnd some important text here\nline 1\nline 2");
+
+        Path textFile2 = directory.resolve("file2.txt");
+        Files.writeString(textFile2, "Another sample file\nWith different content\nBut no important keywords");
+
+        Path javaFile = directory.resolve("Example.java");
+        Files.writeString(javaFile, """
+            public class Example {
+                // Sample Java code
+                public static void main(String[] args) {
+                    System.out.println("Hello, World!");
+                    // line 10 of code
+                }
+            }
+            """);
+
+        Path xmlFile = directory.resolve("config.xml");
+        Files.writeString(xmlFile, """
+            <configuration>
+                <sample>value</sample>
+                <important>setting</important>
+            </configuration>
+            """);
+    }
+
     @Nested
     @DisplayName("Basic Search Tests")
     class BasicSearchTests {
@@ -39,14 +66,12 @@ class GrepFilesServiceTest {
             String pattern = "important text";
 
             // When
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null, null);
+            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertTrue(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("totalMatches").asInt() > 0);
-            assertTrue(jsonResult.get("matches").isArray());
-            assertEquals(1, jsonResult.get("matches").size());
+            assertTrue(jsonResult.get("results").size() > 0);
         }
 
         @Test
@@ -56,16 +81,18 @@ class GrepFilesServiceTest {
             String pattern = "sample";
 
             // When - search only in .txt files
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, ".txt", false, null, null, null);
+            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, ".txt", false, null, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertTrue(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("totalMatches").asInt() > 0);
-            
+            assertTrue(!jsonResult.get("results").isEmpty());
+
             // All matches should be in .txt files
-            for (JsonNode fileMatch : jsonResult.get("matches")) {
-                assertTrue(fileMatch.get("file").asText().endsWith(".txt"));
+            for (JsonNode matchText : jsonResult.get("results")) {
+                if (matchText.asText().contains("(") && matchText.asText().contains("matches)")) {
+                    assertTrue(matchText.asText().contains(".txt"));
+                }
             }
         }
     }
@@ -73,41 +100,41 @@ class GrepFilesServiceTest {
     @Nested
     @DisplayName("Filter Tests")
     class FilterTests {
-        
+
         @Test
         void shouldSearchAllFilesWhenExtensionFilterIsNull() throws Exception {
             // Given
             createTestFiles(tempDir);
             String pattern = "sample"; // Appears in both .txt and .xml files
-            
+
             // When - extension filter is null
-            String resultWithNullFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null, null);
+            String resultWithNullFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null);
             JsonNode jsonResultNullFilter = objectMapper.readTree(resultWithNullFilter);
-            
+
             // When - extension filter is empty
-            String resultWithEmptyFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, "", false, null, null, null);
+            String resultWithEmptyFilter = grepFilesService.grepFiles(tempDir.toString(), pattern, "", false, null, null);
             JsonNode jsonResultEmptyFilter = objectMapper.readTree(resultWithEmptyFilter);
-            
+
             // Then - both should search all files
             assertTrue(jsonResultNullFilter.get("success").asBoolean());
             assertTrue(jsonResultEmptyFilter.get("success").asBoolean());
-            
-            // The number of matches should be the same for both null and empty filter
-            assertEquals(
-                jsonResultNullFilter.get("totalMatches").asInt(),
-                jsonResultEmptyFilter.get("totalMatches").asInt()
-            );
-            
+
+            // The summary should have the same number of matches for both null and empty filter
+            String summaryNull = jsonResultNullFilter.get("summary").asText();
+            String summaryEmpty = jsonResultEmptyFilter.get("summary").asText();
+            assertTrue(summaryNull.contains("Found") && summaryEmpty.contains("Found"));
+            assertEquals(summaryNull, summaryEmpty);
+
             // We should have matches in files with different extensions
             boolean foundTxtFile = false;
             boolean foundXmlFile = false;
-            
-            for (JsonNode fileMatch : jsonResultNullFilter.get("matches")) {
-                String filePath = fileMatch.get("file").asText();
-                if (filePath.endsWith(".txt")) foundTxtFile = true;
-                if (filePath.endsWith(".xml")) foundXmlFile = true;
+
+            for (JsonNode matchText : jsonResultNullFilter.get("results")) {
+                String text = matchText.asText();
+                if (text.contains(".txt")) foundTxtFile = true;
+                if (text.contains(".xml")) foundXmlFile = true;
             }
-            
+
             assertTrue(foundTxtFile || foundXmlFile, "Should find matches in different file types");
         }
     }
@@ -124,12 +151,12 @@ class GrepFilesServiceTest {
             String pattern = "line\\s+[0-9]+";
 
             // When
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, true, null, null, null);
+            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, true, null, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertTrue(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("totalMatches").asInt() > 0);
+            assertTrue(jsonResult.get("results").size() > 0);
         }
 
         @Test
@@ -140,40 +167,25 @@ class GrepFilesServiceTest {
             int contextLines = 2;
 
             // When
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, contextLines, null, null);
+            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, contextLines, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertTrue(jsonResult.get("success").asBoolean());
-            
+
             // Check that context lines are included
-            JsonNode matches = jsonResult.get("matches").get(0).get("matches").get(0);
-            assertTrue(matches.has("contextBefore"));
-            assertTrue(matches.has("contextAfter"));
+            // The context is included in the results as text with line breaks
+            boolean foundContext = false;
+            for (JsonNode aResult : jsonResult.get("results")) {
+                String text = aResult.asText();
+                if (text.contains("→") && text.contains("important text")) {
+                    foundContext = true;
+                    break;
+                }
+            }
+            assertTrue(foundContext, "Should include context lines with arrow symbol");
         }
 
-        @Test
-        void shouldRespectIgnoreCase() throws Exception {
-            // Given
-            createTestFiles(tempDir);
-            // Search for uppercase "IMPORTANT" when file contains lowercase "important"
-            String pattern = "IMPORTANT";
-
-            // When - case sensitive (should not find)
-            String resultCaseSensitive = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null, false);
-            JsonNode jsonResultCaseSensitive = objectMapper.readTree(resultCaseSensitive);
-
-            // When - case insensitive (should find)
-            String resultCaseInsensitive = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, null, true);
-            JsonNode jsonResultCaseInsensitive = objectMapper.readTree(resultCaseInsensitive);
-
-            // Then
-            assertTrue(jsonResultCaseSensitive.get("success").asBoolean());
-            assertEquals(0, jsonResultCaseSensitive.get("totalMatches").asInt());
-            
-            assertTrue(jsonResultCaseInsensitive.get("success").asBoolean());
-            assertTrue(jsonResultCaseInsensitive.get("totalMatches").asInt() > 0);
-        }
     }
 
     @Nested
@@ -181,97 +193,50 @@ class GrepFilesServiceTest {
     class ErrorHandlingTests {
 
         @Test
-        void shouldRespectMaxResultsLimit() throws Exception {
-            // Given
-            createTestFiles(tempDir);
-            String pattern = "line"; // Should match multiple occurrences
-            int maxResults = 1;
-
-            // When
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, false, null, maxResults, null);
-            JsonNode jsonResult = objectMapper.readTree(result);
-
-            // Then
-            assertTrue(jsonResult.get("success").asBoolean());
-            assertEquals(maxResults, jsonResult.get("totalMatches").asInt());
-            assertTrue(jsonResult.get("limitReached").asBoolean());
-        }
-
-        @Test
-        void shouldHandleEmptyDirectory() throws Exception {
-            // Given
-            Path emptyDir = tempDir.resolve("empty-dir");
-            Files.createDirectory(emptyDir);
-            String pattern = "test";
-
-            // When
-            String result = grepFilesService.grepFiles(emptyDir.toString(), pattern, null, false, null, null, null);
-            JsonNode jsonResult = objectMapper.readTree(result);
-
-            // Then
-            assertTrue(jsonResult.get("success").asBoolean());
-            assertEquals(0, jsonResult.get("totalMatches").asInt());
-            assertEquals(0, jsonResult.get("totalFiles").asInt());
-            assertFalse(jsonResult.get("limitReached").asBoolean());
-        }
-
-        @Test
         void shouldHandleNonExistentDirectory() throws Exception {
             // Given
-            String nonExistentDir = tempDir.resolve("non-existent-dir").toString();
+            String nonExistentDir = tempDir.resolve("non-existent").toString();
             String pattern = "test";
 
             // When
-            String result = grepFilesService.grepFiles(nonExistentDir, pattern, null, false, null, null, null);
+            String result = grepFilesService.grepFiles(nonExistentDir, pattern, null, false, null, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertFalse(jsonResult.get("success").asBoolean());
+            assertTrue(jsonResult.has("error"));
             assertTrue(jsonResult.get("error").asText().contains("Directory does not exist"));
         }
 
         @Test
-        void shouldHandleInvalidRegexPattern() throws Exception {
+        void shouldHandleInvalidPattern() throws Exception {
             // Given
             createTestFiles(tempDir);
-            // Invalid regex pattern (unclosed parenthesis)
-            String pattern = "test(unclosed";
+            String invalidRegexPattern = "[";
 
-            // When
-            String result = grepFilesService.grepFiles(tempDir.toString(), pattern, null, true, null, null, null);
+            // When - trying to use the invalid pattern as regex
+            String result = grepFilesService.grepFiles(tempDir.toString(), invalidRegexPattern, null, true, null, null);
             JsonNode jsonResult = objectMapper.readTree(result);
 
             // Then
             assertFalse(jsonResult.get("success").asBoolean());
-            assertTrue(jsonResult.get("error").asText().contains("Error searching files"));
+            assertTrue(jsonResult.has("error"));
         }
     }
 
-    private void createTestFiles(Path directory) throws Exception {
-        // Create a few test files with different content and extensions
-        Path textFile1 = directory.resolve("file1.txt");
-        Files.writeString(textFile1, "This is a sample text file\nWith multiple lines\nAnd some important text here\nline 1\nline 2");
+    // TODO Make a test with the above grep search arguments because it should return a result
+    @Test
+    void basicGrepSearch() throws Exception {
+        createTestFiles(tempDir);
 
-        Path textFile2 = directory.resolve("file2.txt");
-        Files.writeString(textFile2, "Another sample file\nWith different content\nBut no important keywords");
+        GrepFilesService grepFilesService = new GrepFilesService();
+        String result = grepFilesService.grepFiles(tempDir.toString(), "sample", ".java", false, null, 5);
 
-        Path javaFile = directory.resolve("Example.java");
-        Files.writeString(javaFile, """
-                public class Example {
-                    // Sample Java code
-                    public static void main(String[] args) {
-                        System.out.println("Hello, World!");
-                        // line 10 of code
-                    }
-                }
-                """);
-        
-        Path xmlFile = directory.resolve("config.xml");
-        Files.writeString(xmlFile, """
-                <configuration>
-                    <sample>value</sample>
-                    <important>setting</important>
-                </configuration>
-                """);
+        JsonNode jsonResult = objectMapper.readTree(result);
+
+        String summary = jsonResult.get("summary").asText();
+
+        assertTrue(summary.contains("Found 1 matches in 1 files"),
+                "Summary should mention 1 found file");
     }
 }

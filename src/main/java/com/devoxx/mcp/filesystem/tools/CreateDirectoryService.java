@@ -1,6 +1,5 @@
 package com.devoxx.mcp.filesystem.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
@@ -13,9 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class CreateDirectoryService {
-
-    private final ObjectMapper mapper = new ObjectMapper();
+public class CreateDirectoryService extends AbstractToolService {
 
     @Tool(description = """
                  Create a new directory or ensure a directory exists.
@@ -36,22 +33,13 @@ public class CreateDirectoryService {
                     try {
                         Files.createDirectories(dirPath);
                     } catch (IOException e) {
-                        result.put("success", false);
-                        result.put("error", "Failed to create directory: " + e.getMessage());
-                        return mapper.writeValueAsString(result);
+                        return errorMessage( "Failed to create directory: " + e.getMessage());
                     }
                 }
             }
-            result.put("success", true);
-            return mapper.writeValueAsString(result);
+            return successMessage(result);
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("error", "Unexpected error: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
+            return errorMessage("Unexpected error: " + e.getMessage());
         }
     }
 }
