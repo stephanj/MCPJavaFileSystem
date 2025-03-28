@@ -1,0 +1,9 @@
+{
+  "resources": {
+    "includes": [
+      {"pattern": "\\QMETA-INF/services/.*\\E"},
+      {"pattern": "\\Qapplication.properties\\E"},
+      {"pattern": "\\Qmcp-servers-config.json\\E"}
+    ]
+  }
+}

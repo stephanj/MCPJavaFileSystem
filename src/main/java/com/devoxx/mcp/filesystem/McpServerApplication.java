@@ -20,6 +20,8 @@ public class McpServerApplication {
 											EditFileService editFileService,
 											ListDirectoryService listDirectoryService,
 											WriteFileService writeFileService,
+											CreateDirectoryService createDirectoryService,
+											GrepFilesService grepFilesService,
 											FetchWebpageService fetchWebpageService) {
 		return MethodToolCallbackProvider.builder()
 				.toolObjects(searchFilesService,
@@ -27,6 +29,8 @@ public class McpServerApplication {
 						editFileService,
 						readFileService,
 						writeFileService,
+						createDirectoryService,
+						grepFilesService,
 						fetchWebpageService)
 				.build();
 	}

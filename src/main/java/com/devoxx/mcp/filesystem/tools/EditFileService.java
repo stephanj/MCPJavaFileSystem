@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 @Service
 public class EditFileService {
@@ -22,6 +24,11 @@ public class EditFileService {
     @Tool(description = """
     Make line-based edits to a text file. Each edit replaces exact line sequences with new content.
     Returns a git-style diff showing the changes made.
+    
+    The edits parameter can be provided in three formats:
+    1. JSON object: {"oldText": "text to replace", "newText": "replacement text"}
+    2. JSON array: [{"oldText": "text1", "newText": "replacement1"}, {"oldText": "text2", "newText": "replacement2"}]
+    3. Simple format: "oldText----newText" where ---- is the separator
     """)
     public String editFile(
             @ToolParam(description = "The path to the file to edit") String path,
@@ -55,50 +62,18 @@ public class EditFileService {
             // Debug the received edits parameter
             result.put("debug_received_edits", edits);
 
-            // Parse the edits from JSON
-            List<Map<String, String>> editsList;
-            try {
-                // Try to parse as a JSON array
-                if (edits.startsWith("[")) {
-                    editsList = mapper.readValue(edits, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, String>>>() {});
-                } else {
-                    // If the input isn't a JSON array, try to create a single edit from it
-                    Map<String, String> singleEdit = new HashMap<>();
-                    try {
-                        // Try to parse as a single JSON object
-                        if (edits.startsWith("{")) {
-                            singleEdit = mapper.readValue(edits, new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {});
-                        } else {
-                            // If we can't parse it as JSON, assume it's a simple oldText=newText format
-                            result.put("debug_edits_parsing", "Attempting fallback parsing");
-                            return mapper.writeValueAsString(result);
-                        }
-                    } catch (Exception ex) {
-                        result.put("success", false);
-                        result.put("error", "Failed to parse edits as either array or object: " + ex.getMessage());
-                        return mapper.writeValueAsString(result);
-                    }
-
-                    if (!singleEdit.containsKey("oldText") || !singleEdit.containsKey("newText")) {
-                        result.put("success", false);
-                        result.put("error", "Edit must contain 'oldText' and 'newText' fields");
-                        return mapper.writeValueAsString(result);
-                    }
-
-                    editsList = new ArrayList<>();
-                    editsList.add(singleEdit);
-                }
-            } catch (Exception e) {
-                result.put("success", false);
-                result.put("error", "Failed to parse edits: " + e.getMessage());
-                result.put("debug_edits_error", e.toString());
+            // Parse the edits
+            List<Map<String, String>> editsList = parseEdits(edits, result);
+            if (editsList == null) {
                 return mapper.writeValueAsString(result);
             }
 
             // Apply each edit
+            List<String> appliedEdits = new ArrayList<>();
             for (Map<String, String> edit : editsList) {
                 String oldText = edit.get("oldText");
                 String newText = edit.get("newText");
+                boolean useRegex = Boolean.parseBoolean(edit.getOrDefault("useRegex", "false"));
 
                 if (oldText == null || newText == null) {
                     result.put("success", false);
@@ -106,111 +81,201 @@ public class EditFileService {
                     return mapper.writeValueAsString(result);
                 }
 
-                // Replace the text
-                if (!newContent.contains(oldText)) {
-                    // Debug: Add file content info to help diagnose the issue
-                    result.put("success", false);
-                    result.put("error", "Could not find text to replace: " + oldText);
-
-                    // Add helpful debugging information
-                    if (originalContent.length() > 1000) {
-                        result.put("filePreview", originalContent.substring(0, 1000) + "...");
-                    } else {
-                        result.put("filePreview", originalContent);
-                    }
-
-                    // Check for Maven tag issues - special handling for XML files
-                    if (path.endsWith(".xml") || path.endsWith(".pom")) {
-                        String nameTag = "<name>";
-                        String nTag = "<n>";
-
-                        // Check for the common issue with Maven POM files
-                        if (oldText.contains(nameTag) && originalContent.contains(nTag)) {
-                            String suggestion = "File uses <n> tags instead of <name> tags. Try replacing <name> with <n> in your search text.";
-                            result.put("suggestion", suggestion);
+                if (useRegex) {
+                    try {
+                        Pattern pattern = Pattern.compile(oldText, Pattern.DOTALL);
+                        String tempContent = pattern.matcher(newContent).replaceFirst(newText);
+                        
+                        // Only count it as applied if a change was made
+                        if (!tempContent.equals(newContent)) {
+                            newContent = tempContent;
+                            appliedEdits.add(oldText);
+                        } else {
+                            reportTextNotFound(oldText, originalContent, path, result);
+                            return mapper.writeValueAsString(result);
                         }
+                    } catch (PatternSyntaxException e) {
+                        result.put("success", false);
+                        result.put("error", "Invalid regex pattern: " + e.getMessage());
+                        return mapper.writeValueAsString(result);
                     }
-
-                    // Check if there's something similar (might be whitespace issues)
-                    if (oldText.length() > 30) {
-                        String searchSample = oldText.substring(0, 30); // Use part of the search string
-                        int idx = originalContent.indexOf(searchSample);
-                        if (idx >= 0) {
-                            // Found a partial match, extract context
-                            int start = Math.max(0, idx - 20);
-                            int end = Math.min(originalContent.length(), idx + searchSample.length() + 50);
-                            result.put("partialMatch", "Found similar text: " + originalContent.substring(start, end));
-                        }
+                } else {
+                    // Simple text replacement (normalize line endings)
+                    String normalizedContent = normalizeLineEndings(newContent);
+                    String normalizedOldText = normalizeLineEndings(oldText);
+                    
+                    if (!normalizedContent.contains(normalizedOldText)) {
+                        reportTextNotFound(oldText, originalContent, path, result);
+                        return mapper.writeValueAsString(result);
                     }
-
-                    return mapper.writeValueAsString(result);
+                    
+                    newContent = normalizedContent.replace(normalizedOldText, newText);
+                    appliedEdits.add(oldText);
                 }
-
-                newContent = newContent.replace(oldText, newText);
             }
 
             // Generate diff
             String diff = generateDiff(path, originalContent, newContent);
 
             // Write changes to file if not a dry run
-            if (!isDryRun) {
+            if (!isDryRun && !originalContent.equals(newContent)) {
                 Files.writeString(filePath, newContent);
             }
 
             result.put("success", true);
             result.put("diff", diff);
             result.put("dryRun", isDryRun);
-            result.put("editsApplied", editsList.size());
+            result.put("editsApplied", appliedEdits.size());
+            result.put("appliedEdits", appliedEdits);
 
             return mapper.writeValueAsString(result);
 
         } catch (IOException e) {
             result.put("success", false);
             result.put("error", "Failed to edit file: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
-            }
         } catch (Exception e) {
             result.put("success", false);
             result.put("error", "Unexpected error: " + e.getMessage());
-            try {
-                return mapper.writeValueAsString(result);
-            } catch (Exception ex) {
-                return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
+        }
+
+        try {
+            return mapper.writeValueAsString(result);
+        } catch (Exception ex) {
+            return "{\"success\": false, \"error\": \"Failed to serialize error result\"}";
+        }
+    }
+
+    /**
+     * Parse edits in various formats into a unified list.
+     */
+    private List<Map<String, String>> parseEdits(String edits, Map<String, Object> result) {
+        List<Map<String, String>> editsList = new ArrayList<>();
+
+        try {
+            // Try to parse as a JSON array
+            if (edits.startsWith("[")) {
+                editsList = mapper.readValue(edits, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, String>>>() {});
+            } else if (edits.startsWith("{")) {
+                // Parse as a single JSON object
+                Map<String, String> singleEdit = mapper.readValue(edits, new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {});
+                
+                if (!singleEdit.containsKey("oldText") || !singleEdit.containsKey("newText")) {
+                    result.put("success", false);
+                    result.put("error", "Edit must contain 'oldText' and 'newText' fields");
+                    return null;
+                }
+                
+                editsList.add(singleEdit);
+            } else {
+                // Try to parse as a simple format: "oldText----newText"
+                result.put("debug_edits_parsing", "Attempting fallback parsing");
+                
+                String[] parts = edits.split("----", 2);
+                if (parts.length == 2) {
+                    Map<String, String> singleEdit = new HashMap<>();
+                    singleEdit.put("oldText", parts[0]);
+                    singleEdit.put("newText", parts[1]);
+                    editsList.add(singleEdit);
+                } else {
+                    result.put("success", false);
+                    result.put("error", "Could not parse edits. Expected JSON format or 'oldText----newText' format.");
+                    return null;
+                }
+            }
+            
+            return editsList;
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("error", "Failed to parse edits: " + e.getMessage());
+            result.put("debug_edits_error", e.toString());
+            return null;
+        }
+    }
+
+    /**
+     * Report detailed information when text to replace is not found
+     */
+    private void reportTextNotFound(String oldText, String originalContent, String path, Map<String, Object> result) {
+        result.put("success", false);
+        result.put("error", "Could not find text to replace: " + (oldText.length() > 50 ? oldText.substring(0, 47) + "..." : oldText));
+
+        // Add helpful debugging information
+        if (originalContent.length() > 1000) {
+            result.put("filePreview", originalContent.substring(0, 1000) + "...");
+        } else {
+            result.put("filePreview", originalContent);
+        }
+
+        // Check for whitespace issues
+        result.put("oldTextLength", oldText.length());
+        result.put("containsNewlines", oldText.contains("\n"));
+        result.put("containsCarriageReturns", oldText.contains("\r"));
+        result.put("containsSpaces", oldText.contains(" "));
+        result.put("containsTabs", oldText.contains("\t"));
+
+        // Special checks for XML/POM files
+        if (path.endsWith(".xml") || path.endsWith(".pom")) {
+            String nameTag = "<name>";
+            String nTag = "<n>";
+
+            // Check for common Maven POM issues
+            if (oldText.contains(nameTag) && originalContent.contains(nTag)) {
+                String suggestion = "File uses <n> tags instead of <name> tags. Try replacing <name> with <n> in your search text.";
+                result.put("suggestion", suggestion);
             }
         }
+
+        // Check for partial matches
+        if (oldText.length() > 30) {
+            String searchSample = oldText.substring(0, Math.min(30, oldText.length())); 
+            int idx = originalContent.indexOf(searchSample);
+            if (idx >= 0) {
+                // Found a partial match, extract context
+                int start = Math.max(0, idx - 20);
+                int end = Math.min(originalContent.length(), idx + searchSample.length() + 50);
+                result.put("partialMatch", "Found similar text: " + originalContent.substring(start, end));
+            }
+        }
+    }
+
+    /**
+     * Normalize line endings to make replacements more consistent
+     */
+    private String normalizeLineEndings(String text) {
+        // First convert all CRLF to LF
+        String normalized = text.replace("\r\n", "\n");
+        // Then convert any remaining CR to LF (for Mac old format)
+        normalized = normalized.replace("\r", "\n");
+        return normalized;
     }
 
     /**
      * Generate a git-style diff between original and modified content
      */
     private String generateDiff(String filePath, String originalContent, String modifiedContent) {
+        // Normalize line endings
+        originalContent = normalizeLineEndings(originalContent);
+        modifiedContent = normalizeLineEndings(modifiedContent);
+        
         // Simple line-based diff implementation
         StringBuilder diff = new StringBuilder();
-        diff.append("--- " + filePath + "\t(original)\n");
-        diff.append("+++ " + filePath + "\t(modified)\n");
+        diff.append("--- ").append(filePath).append("\t(original)\n");
+        diff.append("+++ ").append(filePath).append("\t(modified)\n");
 
-        String[] originalLines = originalContent.split("\\n");
-        String[] modifiedLines = modifiedContent.split("\\n");
+        String[] originalLines = originalContent.split("\n");
+        String[] modifiedLines = modifiedContent.split("\n");
 
-        // Find differences using a simple approach
-        // For a real implementation, consider using a diff library
-
-        // This is a very simplified diff that just shows before/after
-        // In a real implementation, you would use a proper diff algorithm
         if (!originalContent.equals(modifiedContent)) {
-            diff.append("@@ -1," + originalLines.length + " +1," + modifiedLines.length + " @@\n");
+            diff.append("@@ -1,").append(originalLines.length).append(" +1,").append(modifiedLines.length).append(" @@\n");
 
             // Show removed lines (original content)
             for (String line : originalLines) {
-                diff.append("-" + line + "\n");
+                diff.append("-").append(line).append("\n");
             }
 
             // Show added lines (modified content)
             for (String line : modifiedLines) {
-                diff.append("+" + line + "\n");
+                diff.append("+").append(line).append("\n");
             }
         } else {
             diff.append("No changes\n");
