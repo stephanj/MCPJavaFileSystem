@@ -14,6 +14,7 @@ The server provides the following operations:
 - **Listing Directories**: Get detailed listings of directory contents
 - **Directory Creation**: Create directories and nested directory structures
 - **Grep Files**: Search for text patterns within files with line numbers and context, similar to Unix grep command
+- **Bash Command**: Execute bash commands in the system shell and capture their output
 
 ### Web Operations
 - **Web Page Fetching**: Retrieve content from web pages with configurable timeouts
@@ -104,6 +105,13 @@ createDirectory(List<String> directories)
 ```
 Creates new directories or ensures that directories exist. Can create multiple directories in one operation. If a directory already exists, the operation succeeds silently. Perfect for setting up directory structures for projects or ensuring required paths exist.
 
+#### BashService
+
+```java
+executeBash(String command, String workingDirectory, Integer timeoutSeconds)
+```
+Execute a Bash command in the system shell and return the output. This tool allows running system commands and capturing their standard output and error streams. Use with caution as some commands may have system-wide effects.
+
 ### Web Tools
 
 #### FetchWebpageService
@@ -164,6 +172,7 @@ JavaFileSystemMCP/
                   ListDirectoryService.java
                   CreateDirectoryService.java
                   GrepFilesService.java
+                  BashService.java
                 McpServerApplication.java
       resources/
         application.properties
@@ -238,7 +247,8 @@ Once configured, DevoxxGenie will automatically discover the tools provided by t
 4. Make edits to existing files
 5. Search for text patterns within files (grep)
 6. Create directories and nested directory structures
-7. Fetch web pages and extract content
+7. Execute bash commands in the system shell
+8. Fetch web pages and extract content
 
 All operations will be performed with the permissions of the user running the DevoxxGenie application.
 
@@ -270,6 +280,7 @@ Edit your claude_desktop_config.json file with the following:
 
 When using this server, be aware that:
 - The LLM agent will have access to read and write files on the host system
+- The agent can execute bash commands with the permissions of the user running the application
 - The agent can fetch content from any accessible web URL
 - Consider running the server with appropriate permissions and in a controlled environment
 - The server does not implement authentication or authorization mechanisms
