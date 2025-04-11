@@ -16,13 +16,14 @@ public class McpServerApplication {
 
 	@Bean
 	public ToolCallbackProvider mcpServices(SearchFilesService searchFilesService,
-											ReadFileService readFileService,
-											EditFileService editFileService,
-											ListDirectoryService listDirectoryService,
-											WriteFileService writeFileService,
-											CreateDirectoryService createDirectoryService,
-											GrepFilesService grepFilesService,
-											FetchWebpageService fetchWebpageService) {
+										ReadFileService readFileService,
+										EditFileService editFileService,
+										ListDirectoryService listDirectoryService,
+										WriteFileService writeFileService,
+										CreateDirectoryService createDirectoryService,
+										GrepFilesService grepFilesService,
+										FetchWebpageService fetchWebpageService,
+										BashService bashService) {
 		return MethodToolCallbackProvider.builder()
 				.toolObjects(searchFilesService,
 						listDirectoryService,
@@ -31,7 +32,8 @@ public class McpServerApplication {
 						writeFileService,
 						createDirectoryService,
 						grepFilesService,
-						fetchWebpageService)
+						fetchWebpageService,
+						bashService)
 				.build();
 	}
 }
