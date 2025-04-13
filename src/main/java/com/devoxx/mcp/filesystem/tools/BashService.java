@@ -7,16 +7,15 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class BashService extends AbstractToolService {
 
     private static final int TIMEOUT_SECONDS = 30;
+    private static final Set<String> DISALLOWED_COMMANDS =
+            new HashSet<>(List.of("rm", "rmdir", "mv", "del", "erase", "dd", "mkfs", "format"));
 
     @Tool(description = """
     Execute a Bash command in the system shell and return the output.
@@ -33,7 +32,12 @@ public class BashService extends AbstractToolService {
             if (command == null || command.trim().isEmpty()) {
                 return errorMessage("Command cannot be empty");
             }
-            
+
+            String commandName = command.split(" ")[0];
+            if (DISALLOWED_COMMANDS.contains(commandName)) {
+                return errorMessage("Command '" + commandName + "' is not allowed because it is potentially dangerous.");
+            }
+
             // Set execution parameters
             ProcessBuilder processBuilder = new ProcessBuilder("/bin/bash", "-c", command);
             
