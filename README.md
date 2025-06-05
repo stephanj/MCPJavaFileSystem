@@ -232,10 +232,10 @@ This server can be easily integrated with DevoxxGenie using the MCP (Model Conte
      -Dspring.main.web-application-type=none
      -Dlogging.pattern.console=
      -jar
-     /Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
+     ~/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
      ```
 
-     Enter each argument on a new line.
+     Enter each argument on a new line. You may need to change the path for -jar to point to where you've built the jar.
 
 ### Usage with DevoxxGenie
 
@@ -266,12 +266,14 @@ Edit your claude_desktop_config.json file with the following:
         "-Dspring.main.web-application-type=none",
         "-Dlogging.pattern.console=",
         "-jar",
-        "/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
+        "~/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
       ]
     }  
   }
 }
 ```
+
+ You may need to change the path for -jar to point to where you've built the jar.
 
 <img width="796" alt="image" src="https://github.com/user-attachments/assets/4af70010-2b9d-435f-90b7-38033961a2fb" />
 
