@@ -5,9 +5,10 @@
       "args": [
         "-Dspring.ai.mcp.server.stdio=true",
         "-Dspring.main.web-application-type=none",
+        "-Dspring.main.banner-mode=off",
         "-Dlogging.pattern.console=",
         "-jar",
-        "/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
+        "/Users/stephan/IdeaProjects/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
       ],
       "env": {}
     }
