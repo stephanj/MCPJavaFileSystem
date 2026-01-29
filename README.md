@@ -44,13 +44,35 @@ mvn clean package
 
 ### Running the Server
 
-Run the server using the following command:
+The server supports two transport modes:
+
+#### SSE Mode (HTTP-based, default)
+
+Run the server for SSE-based communication:
 
 ```bash
 java -jar target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
 ```
 
-The server uses STDIO for communication, so it doesn't expose any HTTP endpoints. It's designed to be launched by an MCP client.
+This starts an HTTP server on port 8081 with the SSE endpoint at `/sse`.
+
+#### STDIO Mode (for MCP clients like Claude Desktop or DevoxxGenie)
+
+For STDIO-based communication (required by most MCP clients):
+
+```bash
+java -Dspring.ai.mcp.server.stdio=true \
+     -Dspring.main.web-application-type=none \
+     -Dspring.main.banner-mode=off \
+     -Dlogging.pattern.console= \
+     -jar target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
+```
+
+**Important flags for STDIO mode:**
+- `-Dspring.ai.mcp.server.stdio=true` - Enables STDIO transport
+- `-Dspring.main.web-application-type=none` - Disables the web server
+- `-Dspring.main.banner-mode=off` - Disables Spring Boot banner (required to avoid corrupting JSON-RPC communication)
+- `-Dlogging.pattern.console=` - Disables console logging
 
 ## Tool Services
 
@@ -123,7 +145,7 @@ Fetches or reads a webpage from a URL and returns its content. The service uses 
 
 ## Testing
 
-### Running the Tests
+### Running Unit Tests
 
 A comprehensive set of unit tests is provided for all service classes. Run them using:
 
@@ -133,9 +155,20 @@ mvn test
 
 The tests use JUnit 5 and Mockito for mocking external dependencies like the jsoup library for web requests.
 
-### Test Client
+### Running Integration Tests
 
-A test client is provided in `ClientStdio.java` which demonstrates how to invoke the tools using the MCP protocol.
+Integration tests verify the STDIO transport by spawning the server as a subprocess. First build the JAR, then run integration tests:
+
+```bash
+mvn package -DskipTests
+mvn test -Pintegration-tests
+```
+
+### Test Clients
+
+Test clients are provided to demonstrate MCP protocol usage:
+- `ClientStdio.java` - Demonstrates STDIO transport communication
+- `ClientSse.java` - Demonstrates SSE transport communication
 
 ## Configuration
 
@@ -230,12 +263,15 @@ This server can be easily integrated with DevoxxGenie using the MCP (Model Conte
      ```
      -Dspring.ai.mcp.server.stdio=true
      -Dspring.main.web-application-type=none
+     -Dspring.main.banner-mode=off
      -Dlogging.pattern.console=
      -jar
      ~/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar
      ```
 
      Enter each argument on a new line. You may need to change the path for -jar to point to where you've built the jar.
+
+     **Important**: The `-Dspring.main.banner-mode=off` flag is required to disable the Spring Boot banner, which would otherwise interfere with the JSON-RPC communication over STDIO.
 
 ### Usage with DevoxxGenie
 
@@ -264,16 +300,19 @@ Edit your claude_desktop_config.json file with the following:
       "args": [
         "-Dspring.ai.mcp.server.stdio=true",
         "-Dspring.main.web-application-type=none",
+        "-Dspring.main.banner-mode=off",
         "-Dlogging.pattern.console=",
         "-jar",
         "~/JavaFileSystemMCP/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar"
       ]
-    }  
+    }
   }
 }
 ```
 
- You may need to change the path for -jar to point to where you've built the jar.
+You may need to change the path for -jar to point to where you've built the jar.
+
+**Important**: The `-Dspring.main.banner-mode=off` flag is required to disable the Spring Boot banner, which would otherwise interfere with the JSON-RPC communication over STDIO.
 
 <img width="796" alt="image" src="https://github.com/user-attachments/assets/4af70010-2b9d-435f-90b7-38033961a2fb" />
 
