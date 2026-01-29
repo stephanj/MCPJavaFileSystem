@@ -25,7 +25,10 @@ import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 public class ClientSse {
 
 	public static void main(String[] args) {
-		var transport = new HttpClientSseClientTransport("http://localhost:8080");
+		var transport = HttpClientSseClientTransport
+				.builder("http://localhost:8081")
+				.sseEndpoint("/sse")
+				.build();
 
 		var client = McpClient.sync(transport).build();
 		

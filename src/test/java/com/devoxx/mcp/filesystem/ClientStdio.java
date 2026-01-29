@@ -1,12 +1,10 @@
 package com.devoxx.mcp.filesystem;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 
 /**
@@ -28,7 +26,7 @@ public class ClientStdio {
 						"/Users/christiantzolov/Dev/projects/demo/MCPJavaFileSystem/target/devoxx-filesystem-0.0.1-SNAPSHOT.jar")
 				.build();
 
-		var transport = new StdioClientTransport(stdioParams);
+		var transport = new StdioClientTransport(stdioParams, new JacksonMcpJsonMapper(new ObjectMapper()));
 		var client = McpClient.sync(transport).build();
 
 		client.initialize();
