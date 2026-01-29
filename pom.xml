@@ -15,7 +15,7 @@
     <artifactId>devoxx-filesystem</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <name>Devoxx FileSystem MCP STDIO server</name>
+    <name>Devoxx FileSystem MCP SSE server</name>
     <description>Get access to the filesystem using several related tools</description>
 
     <dependencyManagement>
@@ -23,7 +23,7 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -31,11 +31,12 @@
     </dependencyManagement>
 
     <dependencies>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
