@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "java"
+    commit-message:
+      prefix: "deps"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+      jackson:
+        patterns:
+          - "com.fasterxml.jackson*"
+      testing:
+        patterns:
+          - "org.junit*"
+          - "org.mockito*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
