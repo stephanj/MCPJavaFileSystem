@@ -6,3 +6,5 @@
 /.mvn/
 .DS_Store
 .DS_Store?
+.claude/
+server.log
