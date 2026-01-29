@@ -90,6 +90,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Exclude integration tests by default (they require a pre-built JAR) -->
+                    <excludedGroups>integration</excludedGroups>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -123,5 +127,24 @@
             </releases>
         </repository>
     </repositories>
+
+    <profiles>
+        <!-- Profile to run integration tests (requires pre-built JAR) -->
+        <profile>
+            <id>integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludedGroups combine.self="override"></excludedGroups>
+                            <groups>integration</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
