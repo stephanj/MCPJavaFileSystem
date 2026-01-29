@@ -18,9 +18,9 @@ public class BashService extends AbstractToolService {
             new HashSet<>(List.of("rm", "rmdir", "mv", "del", "erase", "dd", "mkfs", "format"));
 
     @Tool(description = """
-    Execute a Bash command in the system shell and return the output.
-    This tool allows running system commands and capturing their standard output and error streams.
-    Use with caution as some commands may have system-wide effects. DO NOT USE REMOVE OR DELETE COMMANDS!
+        Execute a Bash command in the system shell and return the output.
+        This tool allows running system commands and capturing their standard output and error streams.
+        Use with caution as some commands may have system-wide effects. DO NOT USE REMOVE OR DELETE COMMANDS!
     """)
     public String executeBash(@ToolParam(description = "The Bash command to execute") String command,
                               @ToolParam(description = "Optional working directory for the command execution", required = false) String workingDirectory,
@@ -49,14 +49,11 @@ public class BashService extends AbstractToolService {
             // Merge standard output and error
             processBuilder.redirectErrorStream(true);
             
-            // Start the process
             Process process = processBuilder.start();
             
-            // Set timeout
             int timeout = (timeoutSeconds != null && timeoutSeconds > 0) ? timeoutSeconds : TIMEOUT_SECONDS;
             boolean completed = process.waitFor(timeout, TimeUnit.SECONDS);
             
-            // Read the output
             List<String> outputLines = new ArrayList<>();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
